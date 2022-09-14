@@ -1,0 +1,903 @@
+1.to create list 
+List<String> colors = new List<String>();
+
+2. add to list
+// Create a list and add elements to it in one step
+List<String> colors = new List<String> { 'red', 'green', 'blue' };
+// Add elements to a list after it has been created
+List<String> moreColors = new List<String>();
+moreColors.add('orange');
+moreColors.add('purple');
+
+3. create sobject 
+Account acct = new Account(Name='Acme');
+
+4. This example shows how the generic sObject variable can be assigned to any Salesforce object: an account and a custom object called Book__c.
+
+sObject sobj1 = new Account(Name='Trailhead');
+sObject sobj2 = new Book__c(Name='Workbook 1');
+
+5.the insert statement, which persists the record in Salesforce.
+// Create the account sObject 
+Account acct = new Account(Name='Acme', Phone='(415)555-1212', NumberOfEmployees=100);
+// Insert the account by using DML
+insert acct;
+
+6. how to get the ID on the sObject that corresponds to the inserted account.
+
+// Create the account sObject 
+Account acct = new Account(Name='Acme', Phone='(415)555-1212', NumberOfEmployees=100);
+// Insert the account by using DML
+insert acct;
+// Get the new ID on the inserted sObject argument
+ID acctID = acct.Id;
+// Display this ID in the debug log
+System.debug('ID = ' + acctID);
+// Debug log result (the ID will be different in your case)
+// DEBUG|ID = 001D000000JmKkeIAF
+
+7.// Create a list of contacts
+List<Contact> conList = new List<Contact> {
+    new Contact(FirstName='Joe',LastName='Smith',Department='Finance'),
+        new Contact(FirstName='Kathy',LastName='Smith',Department='Technology'),
+        new Contact(FirstName='Caroline',LastName='Roth',Department='Finance'),
+        new Contact(FirstName='Kim',LastName='Shain',Department='Education')};
+            
+// Bulk insert all contacts with one DML call
+insert conList;
+// List to hold the new contacts to update
+List<Contact> listToUpdate = new List<Contact>();
+// Iterate through the list and add a title only
+//   if the department is Finance
+for(Contact con : conList) {
+    if (con.Department == 'Finance') {
+        con.Title = 'Financial analyst';
+        // Add updated contact sObject to the list.
+        listToUpdate.add(con);
+    }
+}
+// Bulk update all contacts with one DML call
+update listToUpdate;
+
+8.delete contact
+Contact[] contactsDel = [SELECT Id FROM Contact WHERE LastName='Smith']; 
+delete contactsDel;
+
+9.catch errors
+try {
+    // This causes an exception because 
+    //   the required Name field is not provided.
+    Account acct = new Account();
+    // Insert the account 
+    insert acct;
+} catch (DmlException e) {
+    System.debug('A DML exception has occurred: ' +
+                e.getMessage());
+}
+
+10.insert method with the allOrNone set to false.
+
+Database.insert(recordList, false);
+The Database methods return result objects containing success or failure information for each record. For example, insert and update operations each return an array of Database.SaveResult objects.
+
+Database.SaveResult[] results = Database.insert(recordList, false);
+Note
+Note
+Upsert returns Database.UpsertResult objects, and delete returns Database.DeleteResult objects.
+
+By default, the allOrNone parameter is true, which means that the Database method behaves like its DML statement counterpart and will throw an exception if a failure is encountered.
+
+The following two statements are equivalent to the insert recordList; statement.
+
+Database.insert(recordList);
+
+11. soql query
+Account[] accts = [SELECT Name,Phone FROM Account];
+SELECT fields FROM ObjectName [WHERE Condition]
+SELECT Name,Phone FROM Account WHERE (Name='SFDC Computing' AND NumberOfEmployees>25)
+Instead of using the equal operator (=) for comparison, you can perform fuzzy matches by using the LIKE operator. For example, you can retrieve all accounts whose names start with SFDC by using this condition: WHERE Name LIKE 'SFDC%'. The % wildcard character matches any or no character. The _ character in contrast can be used to match just one character.
+SELECT Name,Phone FROM Account ORDER BY Name ASC
+
+SELECT Name,Phone FROM Account 
+                   WHERE (Name = 'SFDC Computing' AND NumberOfEmployees>25)
+                   ORDER BY Name
+                   LIMIT 10
+
+This example shows how to use the targetDepartment variable in the WHERE clause.
+
+String targetDepartment = 'Wingo';
+Contact[] techContacts = [SELECT FirstName,LastName 
+                          FROM Contact WHERE Department=:targetDepartment];
+
+12. derieve child data 
+SELECT Name, (SELECT LastName FROM Contacts) FROM Account WHERE Name = 'SFDC Computing'
+This next example embeds the example SOQL query in Apex and shows how to get the child records from the SOQL result by using the Contacts relationship name on the sObject.
+
+Account[] acctsWithContacts = [SELECT Name, (SELECT FirstName,LastName FROM Contacts)
+                               FROM Account 
+                               WHERE Name = 'SFDC Computing'];
+// Get child records
+Contact[] cts = acctsWithContacts[0].Contacts;
+System.debug('Name of first associated contact: ' 
+             + cts[0].FirstName + ', ' + cts[0].LastName);
+
+-----------sosl--------------
+
+13.List<List<SObject>> searchList = [FIND 'SFDC' IN ALL FIELDS 
+                                      RETURNING Account(Name), Contact(FirstName,LastName)];
+
+14. FIND 'SearchQuery' [IN SearchGroup] [RETURNING ObjectsAndFields]
+
+ALL FIELDS
+NAME FIELDS
+EMAIL FIELDS
+PHONE FIELDS
+SIDEBAR FIELDS
+
+15.List<List<sObject>> searchList = [FIND 'Wingo OR SFDC' IN ALL FIELDS 
+                   RETURNING Account(Name),Contact(FirstName,LastName,Department)];
+Account[] searchAccounts = (Account[])searchList[0];
+Contact[] searchContacts = (Contact[])searchList[1];
+System.debug('Found the following accounts.');
+for (Account a : searchAccounts) {
+    System.debug(a.Name);
+}
+System.debug('Found the following contacts.');
+for (Contact c : searchContacts) {
+    System.debug(c.LastName + ', ' + c.FirstName);
+}
+
+You can filter SOSL results by adding conditions in the WHERE clause for an object. For example, this results in only accounts whose industry is Apparel to be returned: RETURNING Account(Name, Industry WHERE Industry='Apparel')
+
+Likewise, ordering results for one sObject is supported by adding ORDER BY for an object. For example this causes the returned accounts to be ordered by the Name field: RETURNING Account(Name, Industry ORDER BY Name).
+
+The number of returned records can be limited to a subset of records. This example limits the returned accounts to 10 only: RETURNING Account(Name, Industry LIMIT 10)
+
+
+=======Triggers============
+
+1.
+trigger TriggerName on ObjectName (trigger_events) {
+   code_block
+}
+
+
+2.before insert
+before update
+before delete
+after insert
+after update
+after delete
+after undelete
+
+3. trigger ContextExampleTrigger on Account (before insert, after insert, after delete) {
+    if (Trigger.isInsert) {
+        if (Trigger.isBefore) {
+            // Process before insert
+        } else if (Trigger.isAfter) {
+            // Process after insert
+        }        
+    }
+    else if (Trigger.isDelete) {
+        // Process after delete
+    }
+}
+
+4.
+
+trigger ExampleTrigger on Contact (after insert, after delete) {
+    if (Trigger.isInsert) {
+        Integer recordCount = Trigger.New.size();
+        // Call a utility method from another class
+        EmailManager.sendMail('Your email address', 'Trailhead Trigger Tutorial', 
+                    recordCount + ' contact(s) were inserted.');
+    }
+    else if (Trigger.isDelete) {
+        // Process after delete
+    }
+}
+
+5.
+trigger AddRelatedRecord on Account(after insert, after update) {
+    List<Opportunity> oppList = new List<Opportunity>();
+    
+    // Get the related opportunities for the accounts in this trigger
+    Map<Id,Account> acctsWithOpps = new Map<Id,Account>(
+        [SELECT Id,(SELECT Id FROM Opportunities) FROM Account WHERE Id IN :Trigger.New]);
+    
+    // Add an opportunity for each account if it doesn't already have one.
+    // Iterate through each account.
+    for(Account a : Trigger.New) {
+        System.debug('acctsWithOpps.get(a.Id).Opportunities.size()=' + acctsWithOpps.get(a.Id).Opportunities.size());
+        // Check if the account already has a related opportunity.
+        if (acctsWithOpps.get(a.Id).Opportunities.size() == 0) {
+            // If it doesn't, add a default opportunity
+            oppList.add(new Opportunity(Name=a.Name + ' Opportunity',
+                                       StageName='Prospecting',
+                                       CloseDate=System.today().addMonths(1),
+                                       AccountId=a.Id));
+        }           
+    }
+    if (oppList.size() > 0) {
+        insert oppList;
+    }
+}
+
+
+6.trigger AccountDeletion on Account (before delete) {
+   
+    // Prevent the deletion of accounts if they have related opportunities.
+    for (Account a : [SELECT Id FROM Account
+                     WHERE Id IN (SELECT AccountId FROM Opportunity) AND
+                     Id IN :Trigger.old]) {
+        Trigger.oldMap.get(a.Id).addError(
+            'Cannot delete account with related opportunities.');
+    }
+    
+}
+
+7.
+
+public class CalloutClass {
+    @future(callout=true)
+    public static void makeCallout() {
+        HttpRequest request = new HttpRequest();
+        // Set the endpoint URL.
+        String endpoint = 'http://yourHost/yourService';
+        request.setEndPoint(endpoint);
+        // Set the HTTP verb to GET.
+        request.setMethod('GET');
+        // Send the HTTP request and get the response.
+        HttpResponse response = new HTTP().send(request);
+    }
+}
+
+8.
+trigger MyTriggerBulk on Account(before insert) {
+    for(Account a : Trigger.New) {
+        a.Description = 'New description';
+    }
+}
+
+9.
+
+trigger SoqlTriggerBulk on Account(after update) {  
+    // Perform SOQL query once.    
+    // Get the accounts and their related opportunities.
+    List<Account> acctsWithOpps = 
+        [SELECT Id,(SELECT Id,Name,CloseDate FROM Opportunities) 
+         FROM Account WHERE Id IN :Trigger.New];
+  
+    // Iterate over the returned accounts    
+    for(Account a : acctsWithOpps) { 
+        Opportunity[] relatedOpps = a.Opportunities;  
+        // Do some other processing
+    }
+}
+
+10.trigger DmlTriggerBulk on Account(after update) {   
+    // Get the related opportunities for the accounts in this trigger.        
+    List<Opportunity> relatedOpps = [SELECT Id,Name,Probability FROM Opportunity
+        WHERE AccountId IN :Trigger.New];
+          
+    List<Opportunity> oppsToUpdate = new List<Opportunity>();
+    // Iterate over the related opportunities
+    for(Opportunity opp : relatedOpps) {      
+        // Update the description when probability is greater 
+        // than 50% but less than 100% 
+        if ((opp.Probability >= 50) && (opp.Probability < 100)) {
+            opp.Description = 'New description for opportunity.';
+            oppsToUpdate.add(opp);
+        }
+    }
+    
+    // Perform DML on a collection
+    update oppsToUpdate;
+}
+
+11.  
+trigger AddRelatedRecord on Account(after insert, after update) {
+    List<Opportunity> oppList = new List<Opportunity>();
+    
+    // Add an opportunity for each account if it doesn't already have one.
+    // Iterate over accounts that are in this trigger but that don't have opportunities.
+    for (Account a : [SELECT Id,Name FROM Account
+                     WHERE Id IN :Trigger.New AND
+                     Id NOT IN (SELECT AccountId FROM Opportunity)]) {
+        // Add a default opportunity for this account
+        oppList.add(new Opportunity(Name=a.Name + ' Opportunity',
+                                   StageName='Prospecting',
+                                   CloseDate=System.today().addMonths(1),
+                                   AccountId=a.Id)); 
+    }
+    
+    if (oppList.size() > 0) {
+        insert oppList;
+    }
+}
+
+
+
+12.trigger ClosedOpportunityTrigger on Opportunity(after insert, after update) {
+    List<Task> oppList = new List<Task>();
+    
+    for (Opportunity a : [SELECT Id,StageName,(SELECT WhatId,Subject FROM Tasks) FROM Opportunity
+                     WHERE Id IN :Trigger.New AND StageName LIKE '%Closed Won%']) {
+        oppList.add(new Task( WhatId=a.Id, Subject='Follow Up Test Task'));
+         
+    }
+    
+    if (oppList.size() > 0) {
+        insert oppList;
+    }
+}
+
+----------------------------testing-------------------
+1.@isTest
+private class MyTestClass {
+    @isTest static void myTest() {
+        // code_block
+    }
+}
+
+@isTest
+private class TaskUtilTest {
+    @isTest static void testTaskPriority() {
+        String pri = TaskUtil.getTaskPriority('NY');
+        System.assertEquals('Normal', pri);
+    }
+}
+
+
+
+2.=-------------------------test data-------------------------
+@isTest
+public class TestDataFactory {
+    public static List<Account> createAccountsWithOpps(Integer numAccts, Integer numOppsPerAcct) {
+        List<Account> accts = new List<Account>();
+        for(Integer i=0;i<numAccts;i++) {
+            Account a = new Account(Name='TestAccount' + i);
+            accts.add(a);
+        }
+        insert accts;
+        List<Opportunity> opps = new List<Opportunity>();
+        for (Integer j=0;j<numAccts;j++) {
+            Account acct = accts[j];
+            // For each account just inserted, add opportunities
+            for (Integer k=0;k<numOppsPerAcct;k++) {
+                opps.add(new Opportunity(Name=acct.Name + ' Opportunity ' + k,
+                                       StageName='Prospecting',
+                                       CloseDate=System.today().addMonths(1),
+                                       AccountId=acct.Id));
+            }
+        }
+        // Insert all opportunities for all accounts.
+        insert opps;
+        return accts;
+    }
+}
+
+----------------------------------future methods=====================================
+
+Future Method Syntax
+Future methods must be static methods, and can only return a void type. The specified parameters must be primitive data types, arrays of primitive data types, or collections of primitive data types. Notably, future methods can’t take standard or custom objects as arguments. A common pattern is to pass the method a List of record IDs that you want to process asynchronously.
+
+global class SomeClass {
+  @future
+  public static void someFutureMethod(List<Id> recordIds) {
+    List<Account> accounts = [Select Id, Name from Account Where Id IN :recordIds];
+    // process account records to do awesome stuff
+  }
+}
+
+1.
+@isTest
+public class AccountProcessorTest {
+    @isTest static void accountcheck(){
+        Account a = new Account();
+        a.Name = 'Test Account';
+        Insert a;
+
+        Contact cont = New Contact();
+        cont.FirstName ='Bob';
+        cont.LastName ='Masters';
+        cont.AccountId = a.Id;
+        Insert cont;
+       
+        set<Id> setAccId = new Set<ID>();
+        setAccId.add(a.id);
+ 
+        Test.startTest();
+            AccountProcessor.countContacts(setAccId);
+        Test.stopTest();
+       
+        Account ACC = [select Number_of_Contacts__c from Account where id = :a.id LIMIT 1];
+        System.assertEquals ( Integer.valueOf(ACC.Number_of_Contacts__c) ,1);
+    }
+}
+
+===================================================================batch apex================
+
+public class MyBatchClass implements Database.Batchable<sObject> {
+    public (Database.QueryLocator | Iterable<sObject>) start(Database.BatchableContext bc) {
+        // collect the batches of records or objects to be passed to execute
+    }
+    public void execute(Database.BatchableContext bc, List<P> records){
+        // process each batch of records
+    }
+    public void finish(Database.BatchableContext bc){
+        // execute any post-processing operations
+    }
+}
+
+execute
+
+MyBatchClass myBatchObject = new MyBatchClass();
+Id batchId = Database.executeBatch(myBatchObject);
+
+
+Id batchId = Database.executeBatch(myBatchObject, 100);
+
+
+
+1.
+public class UpdateContactAddresses implements
+    Database.Batchable<sObject>, Database.Stateful {
+    // instance member to retain state across transactions
+    public Integer recordsProcessed = 0;
+    public Database.QueryLocator start(Database.BatchableContext bc) {
+        return Database.getQueryLocator(
+            'SELECT ID, BillingStreet, BillingCity, BillingState, ' +
+            'BillingPostalCode, (SELECT ID, MailingStreet, MailingCity, ' +
+            'MailingState, MailingPostalCode FROM Contacts) FROM Account ' +
+            'Where BillingCountry = \'USA\''
+        );
+    }
+    public void execute(Database.BatchableContext bc, List<Account> scope){
+        // process each batch of records
+        List<Contact> contacts = new List<Contact>();
+        for (Account account : scope) {
+            for (Contact contact : account.contacts) {
+                contact.MailingStreet = account.BillingStreet;
+                contact.MailingCity = account.BillingCity;
+                contact.MailingState = account.BillingState;
+                contact.MailingPostalCode = account.BillingPostalCode;
+                // add contact to list to be updated
+                contacts.add(contact);
+                // increment the instance member counter
+                recordsProcessed = recordsProcessed + 1;
+            }
+        }
+        update contacts;
+    }
+    public void finish(Database.BatchableContext bc){
+        System.debug(recordsProcessed + ' records processed. Shazam!');
+        AsyncApexJob job = [SELECT Id, Status, NumberOfErrors,
+            JobItemsProcessed,
+            TotalJobItems, CreatedBy.Email
+            FROM AsyncApexJob
+            WHERE Id = :bc.getJobId()];
+        // call some utility to send email
+        EmailUtils.sendMessage(job, recordsProcessed);
+    }
+}
+
+2. testing 
+
+@isTest
+private class UpdateContactAddressesTest {
+    @testSetup
+    static void setup() {
+        List<Account> accounts = new List<Account>();
+        List<Contact> contacts = new List<Contact>();
+        // insert 10 accounts
+        for (Integer i=0;i<10;i++) {
+            accounts.add(new Account(name='Account '+i,
+                billingcity='New York', billingcountry='USA'));
+        }
+        insert accounts;
+        // find the account just inserted. add contact for each
+        for (Account account : [select id from account]) {
+            contacts.add(new Contact(firstname='first',
+                lastname='last', accountId=account.id));
+        }
+        insert contacts;
+    }
+    @isTest static void test() {
+        Test.startTest();
+        UpdateContactAddresses uca = new UpdateContactAddresses();
+        Id batchId = Database.executeBatch(uca);
+        Test.stopTest();
+        // after the testing stops, assert records were updated properly
+        System.assertEquals(10, [select count() from contact where MailingCity = 'New York']);
+    }
+}
+
+-----------------------------------------------------------------------oueueable------------------------------
+
+Queueable Syntax
+To use Queueable Apex, simply implement the Queueable interface.
+
+public class SomeClass implements Queueable {
+    public void execute(QueueableContext context) {
+        // awesome code here
+    }
+}
+
+
+
+
+
+
+The following code takes a collection of Account records, sets the parentId for each record, and then updates the records in the database.
+
+public class UpdateParentAccount implements Queueable {
+    private List<Account> accounts;
+    private ID parent;
+    public UpdateParentAccount(List<Account> records, ID id) {
+        this.accounts = records;
+        this.parent = id;
+    }
+    public void execute(QueueableContext context) {
+        for (Account account : accounts) {
+          account.parentId = parent;
+          // perform other processing or callout
+        }
+        update accounts;
+    }
+}
+To add this class as a job on the queue, execute the following code:
+
+// find all accounts in ‘NY’
+List<Account> accounts = [select id from account where billingstate = ‘NY’];
+// find a specific parent account for all records
+Id parentId = [select id from account where name = 'ACME Corp'][0].Id;
+// instantiate a new instance of the Queueable class
+UpdateParentAccount updateJob = new UpdateParentAccount(accounts, parentId);
+// enqueue the job for processing
+ID jobID = System.enqueueJob(updateJob);
+After you submit your queueable class for execution, the job is added to the queue and will be processed when system resources become available.
+
+You can use the new job ID to monitor progress, either through the Apex Jobs page or programmatically by querying AsyncApexJob:
+
+SELECT Id, Status, NumberOfErrors FROM AsyncApexJob WHERE Id = :jobID
+
+
+
+
+
+
+testing queueable apex
+
+@isTest
+public class UpdateParentAccountTest {
+    @testSetup
+    static void setup() {
+        List<Account> accounts = new List<Account>();
+        // add a parent account
+        accounts.add(new Account(name='Parent'));
+        // add 100 child accounts
+        for (Integer i = 0; i < 100; i++) {
+            accounts.add(new Account(
+                name='Test Account'+i
+            ));
+        }
+        insert accounts;
+    }
+    static testmethod void testQueueable() {
+        // query for test data to pass to queueable class
+        Id parentId = [select id from account where name = 'Parent'][0].Id;
+        List<Account> accounts = [select id, name from account where name like 'Test Account%'];
+        // Create our Queueable instance
+        UpdateParentAccount updater = new UpdateParentAccount(accounts, parentId);
+        // startTest/stopTest block to force async processes to run
+        Test.startTest();
+        System.enqueueJob(updater);
+        Test.stopTest();
+        // Validate the job ran. Check if record have correct parentId now
+        System.assertEquals(100, [select count() from account where parentId = :parentId]);
+    }
+}
+
+
+
+
+----------------------------------------------------------------scheduled apex-----------------------------------------------------
+
+Scheduled Apex Syntax
+To invoke Apex classes to run at specific times, first implement the Schedulable interface for the class. Then, schedule an instance of the class to run at a specific time using the System.schedule method.
+
+global class SomeClass implements Schedulable {
+    global void execute(SchedulableContext ctx) {
+        // awesome code here
+    }
+}
+The class implements the Schedulable interface and must implement the only method that this interface contains, which is the execute method.
+
+
+
+
+
+This class queries for open opportunities that should have closed by the current date, and creates a task on each one to remind the owner to update the opportunity.
+
+global class RemindOpptyOwners implements Schedulable {
+    global void execute(SchedulableContext ctx) {
+        List<Opportunity> opptys = [SELECT Id, Name, OwnerId, CloseDate
+            FROM Opportunity
+            WHERE IsClosed = False AND
+            CloseDate < TODAY];
+        // Create a task for each opportunity in the list
+        TaskUtils.remindOwners(opptys);
+    }
+}
+
+
+
+The System.Schedule method takes three arguments: a name for the job, a CRON expression used to represent the time and date the job is scheduled to run, and an instance of a class that implements the Schedulable interface.
+
+RemindOpptyOwners reminder = new RemindOpptyOwners();
+// Seconds Minutes Hours Day_of_month Month Day_of_week optional_year
+String sch = '20 30 8 10 2 ?';
+String jobID = System.schedule('Remind Opp Owners', sch, reminder);
+
+
+
+Scheduling a Job from the UI
+You can also schedule a class using the user interface.
+From Setup, enter Apex in the Quick Find box, then select Apex Classes.
+Click Schedule Apex.
+For the job name, enter something like Daily Oppty Reminder.
+Click the lookup button next to Apex class and enter * for the search term to get a list of all classes that can be scheduled. In the search results, click the name of your scheduled class.
+Select Weekly or Monthly for the frequency and set the frequency desired.
+Select the start and end dates, and a preferred start time.
+Click Save.
+
+
+
+testing   
+
+@isTest
+private class RemindOppyOwnersTest {
+    // Dummy CRON expression: midnight on March 15.
+    // Because this is a test, job executes
+    // immediately after Test.stopTest().
+    public static String CRON_EXP = '0 0 0 15 3 ? 2022';
+    static testmethod void testScheduledJob() {
+        // Create some out of date Opportunity records
+        List<Opportunity> opptys = new List<Opportunity>();
+        Date closeDate = Date.today().addDays(-7);
+        for (Integer i=0; i<10; i++) {
+            Opportunity o = new Opportunity(
+                Name = 'Opportunity ' + i,
+                CloseDate = closeDate,
+                StageName = 'Prospecting'
+            );
+            opptys.add(o);
+        }
+        insert opptys;
+        // Get the IDs of the opportunities we just inserted
+        Map<Id, Opportunity> opptyMap = new Map<Id, Opportunity>(opptys);
+        List<Id> opptyIds = new List<Id>(opptyMap.keySet());
+        Test.startTest();
+        // Schedule the test job
+        String jobId = System.schedule('ScheduledApexTest',
+            CRON_EXP,
+            new RemindOpptyOwners());
+        // Verify the scheduled job has not run yet.
+        List<Task> lt = [SELECT Id
+            FROM Task
+            WHERE WhatId IN :opptyIds];
+        System.assertEquals(0, lt.size(), 'Tasks exist before job has run');
+        // Stopping the test will run the job synchronously
+        Test.stopTest();
+        // Now that the scheduled job has executed,
+        // check that our tasks were created
+        lt = [SELECT Id
+            FROM Task
+            WHERE WhatId IN :opptyIds];
+        System.assertEquals(opptyIds.size(),
+            lt.size(),
+            'Tasks were not created');
+    }
+}
+
+
+---------------------------------------------------------------------http get-----------------------
+
+
+Http http = new Http();
+HttpRequest request = new HttpRequest();
+request.setEndpoint('https://th-apex-http-callout.herokuapp.com/animals');
+request.setMethod('GET');
+HttpResponse response = http.send(request);
+// If the request is successful, parse the JSON response.
+if(response.getStatusCode() == 200) {
+    // Deserialize the JSON string into collections of primitive data types.
+    Map<String, Object> results = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
+    // Cast the values in the 'animals' key as a list
+    List<Object> animals = (List<Object>) results.get('animals');
+    System.debug('Received the following animals:');
+    for(Object animal: animals) {
+        System.debug(animal);
+    }
+}
+
+-------------------------------------------------------------------http post-------------------------------
+
+Http http = new Http();
+HttpRequest request = new HttpRequest();
+request.setEndpoint('https://th-apex-http-callout.herokuapp.com/animals');
+request.setMethod('POST');
+request.setHeader('Content-Type', 'application/json;charset=UTF-8');
+// Set the body as a JSON object
+request.setBody('{"name":"mighty moose"}');
+HttpResponse response = http.send(request);
+// Parse the JSON response
+if(response.getStatusCode() != 201) {
+    System.debug('The status code returned was not expected: ' + response.getStatusCode() + ' ' + response.getStatus());
+} else {
+    System.debug(response.getBody());
+}
+
+--------------------------------------------------------------test mock----------------------------------------------
+
+@isTest
+private class AnimalsCalloutsTest {
+    @isTest static  void testGetCallout() {
+        // Create the mock response based on a static resource
+        StaticResourceCalloutMock mock = new StaticResourceCalloutMock();
+        mock.setStaticResource('GetAnimalResource');
+        mock.setStatusCode(200);
+        mock.setHeader('Content-Type', 'application/json;charset=UTF-8');
+        // Associate the callout with a mock response
+        Test.setMock(HttpCalloutMock.class, mock);
+        // Call method to test
+        HttpResponse result = AnimalsCallouts.makeGetCallout();
+        // Verify mock response is not null
+        System.assertNotEquals(null,result, 'The callout returned a null response.');
+        // Verify status code
+        System.assertEquals(200,result.getStatusCode(), 'The status code is not 200.');
+        // Verify content type   
+        System.assertEquals('application/json;charset=UTF-8',
+          result.getHeader('Content-Type'),
+          'The content type value is not expected.');  
+        // Verify the array contains 3 items     
+        Map<String, Object> results = (Map<String, Object>) 
+            JSON.deserializeUntyped(result.getBody());
+        List<Object> animals = (List<Object>) results.get('animals');
+        System.assertEquals(3, animals.size(), 'The array should only contain 3 items.');          
+    }   
+    @isTest 
+	static void testPostCallout() {
+    // Set mock callout class 
+    Test.setMock(HttpCalloutMock.class, new AnimalsHttpCalloutMock()); 
+    // This causes a fake response to be sent
+    // from the class that implements HttpCalloutMock. 
+    HttpResponse response = AnimalsCallouts.makePostCallout();
+    // Verify that the response received contains fake values
+    String contentType = response.getHeader('Content-Type');
+    System.assert(contentType == 'application/json');
+    String actualValue = response.getBody();
+    System.debug(response.getBody());
+    String expectedValue = '{"animals": ["majestic badger", "fluffy bunny", "scary bear", "chicken", "mighty moose"]}';
+    System.assertEquals(actualValue, expectedValue);
+    System.assertEquals(200, response.getStatusCode());
+}
+}
+
+
+@isTest
+global class AnimalsHttpCalloutMock implements HttpCalloutMock {
+    // Implement this interface method
+    global HTTPResponse respond(HTTPRequest request) {
+        // Create a fake response
+        HttpResponse response = new HttpResponse();
+        response.setHeader('Content-Type', 'application/json');
+        response.setBody('{"animals": ["majestic badger", "fluffy bunny", "scary bear", "chicken", "mighty moose"]}');
+        response.setStatusCode(200);
+        return response; 
+    }
+}
+
+
+--------------------------------------------------------------------exporting class Rest
+
+Expose a Class as a REST Service
+Making your Apex class available as a REST web service is straightforward. Define your class as global, and define methods as global static. Add annotations to the class and methods. For example, this sample Apex REST class uses one method. The getRecord method is a custom REST API call. It’s annotated with @HttpGet and is invoked for a GET request.
+
+@RestResource(urlMapping='/Account/*')
+global with sharing class MyRestResource {
+    @HttpGet
+    global static Account getRecord() {
+        // Add your code
+    }
+}
+As you can see, the class is annotated with @RestResource(urlMapping='/Account/*'). The base endpoint for Apex REST is https://yourInstance.my.salesforce.com/services/apexrest/. The URL mapping is appended to the base endpoint to form the endpoint for your REST service. For example, in the class example, the REST endpoint is https://yourInstance.my.salesforce.com/services/apexrest/. For your org, it could look something like, https://yourInstance.my.salesforce.com/services/apexrest/Account/*.
+
+The URL mapping is case-sensitive and can contain a wildcard character (*).
+
+
+---------------------------------------------------------------------exportig class soap
+
+Expose a Class as a SOAP Service
+Making your Apex class available as a SOAP web service is as easy as with REST. Define your class as global. Add the webservice keyword and the static definition modifier to each method you want to expose. The webservice keyword provides global access to the method it is added to.
+
+For example, here’s a sample class with one method. The getRecord method is a custom SOAP API call that returns an Account record.
+
+global with sharing class MySOAPWebService {
+    webservice static Account getRecord(String id) {
+        // Add your code
+    }
+}
+
+
+
+
+
+
+-------------------------------------example code
+
+@RestResource(urlMapping='/Cases/*')
+global with sharing class CaseManager {
+    @HttpGet
+    global static Case getCaseById() {
+        RestRequest request = RestContext.request;
+        // grab the caseId from the end of the URL
+        String caseId = request.requestURI.substring(
+          request.requestURI.lastIndexOf('/')+1);
+        Case result =  [SELECT CaseNumber,Subject,Status,Origin,Priority
+                        FROM Case
+                        WHERE Id = :caseId];
+        return result;
+    }
+    @HttpPost
+    global static ID createCase(String subject, String status,
+        String origin, String priority) {
+        Case thisCase = new Case(
+            Subject=subject,
+            Status=status,
+            Origin=origin,
+            Priority=priority);
+        insert thisCase;
+        return thisCase.Id;
+    }   
+    @HttpDelete
+    global static void deleteCase() {
+        RestRequest request = RestContext.request;
+        String caseId = request.requestURI.substring(
+            request.requestURI.lastIndexOf('/')+1);
+        Case thisCase = [SELECT Id FROM Case WHERE Id = :caseId];
+        delete thisCase;
+    }     
+    @HttpPut
+    global static ID upsertCase(String subject, String status,
+        String origin, String priority, String id) {
+        Case thisCase = new Case(
+                Id=id,
+                Subject=subject,
+                Status=status,
+                Origin=origin,
+                Priority=priority);
+        // Match case by Id, if present.
+        // Otherwise, create new case.
+        upsert thisCase;
+        // Return the case ID.
+        return thisCase.Id;
+    }
+    @HttpPatch
+    global static ID updateCaseFields() {
+        RestRequest request = RestContext.request;
+        String caseId = request.requestURI.substring(
+            request.requestURI.lastIndexOf('/')+1);
+        Case thisCase = [SELECT Id FROM Case WHERE Id = :caseId];
+        // Deserialize the JSON string into name-value pairs
+        Map<String, Object> params = (Map<String, Object>)JSON.deserializeUntyped(request.requestbody.tostring());
+        // Iterate through each parameter field and value
+        for(String fieldName : params.keySet()) {
+            // Set the field and value on the Case sObject
+            thisCase.put(fieldName, params.get(fieldName));
+        }
+        update thisCase;
+        return thisCase.Id;
+    }    
+}
